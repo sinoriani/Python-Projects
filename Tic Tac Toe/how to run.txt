@@ -1,0 +1,7 @@
+how to start the server:
+
+cd into the main folder
+$ source /venv/bin/activate
+$ python run.py
+
+then go to the browser and enter the url localhost:5000

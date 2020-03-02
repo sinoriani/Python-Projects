@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>Python Chat App Yo</title>
+
+    <!-- Bootstrap -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" 
+    integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+    <style>
+      div.msg_bbl {
+        background-color: #ddd;
+        padding: 5px 10px;
+        border-radius: 10px;
+        color: #555;
+        margin-bottom: 5px;
+      }
+
+      body{
+        background-color: #333;
+      }
+    </style>
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+
+    <div class="text-center well"><b>Tic Tac Toe Online</b></div>
+
+    <div class="container ">
+      <div class="row justify-content-sm-center">
+        <div class="col-sm-auto">
+          <form action="" method="POST">
+            <b>Type your message below <span class="glyphicon glyphicon-arrow-down"></span></b>
+            <div class="clearfix" style="margin-top: 5px;"></div>
+            <input type="text" class="username form-control" placeholder="User Name">
+            <div style="padding-top: 5px;"></div>
+            <input type="text" class="room_name form-control" placeholder="Room name">
+            <div style="padding-top: 5px;"></div>
+            <button type="submit" class="btn btn-success btn-block"><span class="glyphicon glyphicon-send"></span> Join Room</button>
+          </form>
+        </div>
+      </div>
+
+      <div>
+        <p  id="room_full" style="margin-top: 10px; font-size: 1.5em; color: #ddd;"></p>
+      </div>
+    </div>
+
+
+      
+
+
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.7.3/socket.io.min.js"></script>
+    <script>
+      function makeid(length) {
+        var result           = '';
+        var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        var charactersLength = characters.length;
+        for ( var i = 0; i < length; i++ ) {
+            result += characters.charAt(Math.floor(Math.random() * charactersLength));
+        }
+        return result;
+      }
+      let id;
+      var socket = io.connect( 'http://' + document.domain + ':' + location.port )
+      // broadcast a message
+      socket.on( 'connect', function() {
+        /*socket.emit( 'my event', {
+          data: 'User Connected'
+        } )*/
+        if(sessionStorage.getItem('clientId') == null){
+          //id = makeid(8)
+          //sessionStorage.setItem('clientId',id)
+        }else{
+          id = sessionStorage.getItem('clientId')
+          console.log(id)
+          window.location = '/game/'+ id
+        }
+        
+
+
+        var form = $( 'form' ).on( 'submit', function( e ) {
+          e.preventDefault()
+          let user_name = $( 'input.username' ).val()
+          let room_name = $( 'input.room_name' ).val()
+
+          id = makeid(8)
+          sessionStorage.setItem('clientId',id)
+          sessionStorage.setItem('user_name',user_name)
+          sessionStorage.setItem('room_name',room_name)
+
+          socket.emit( 'redirect to game page', {
+            user_name : user_name,
+            room_name : room_name,
+            clientId : id
+          } ) // we join from game.html
+
+
+          // empty the input field
+          //$( 'input.message' ).val( '' ).focus()
+        } )
+      } )
+      // capture message
+      socket.on( 'roomJoined', function( msg ) {
+        //console.log( msg )
+      } )
+
+      socket.on('redirect', function(data){
+        url = data.url.split('/')
+        window.location = '/' + url[1] +'/'+id
+        console.log(data)
+      })
+
+      socket.on('room full',function(){
+        document.getElementById('room_full').innerHTML = 'Room is full!'
+        console.log('room is full')
+      })
+    </script>
+  </body>
+</html>

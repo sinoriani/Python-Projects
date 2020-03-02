@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    
+    <script src="{{ url_for('static', filename = 'libraries/p5.js') }}  " type="text/javascript"></script>
+    <script src="{{ url_for('static', filename = 'libraries/p5.dom.js') }}" type="text/javascript"></script>
+
+
+
+    <title>Tic Tac Toe Online</title>
+
+    <!-- Bootstrap -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" 
+    integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+    <style>
+      div.msg_bbl {
+        background-color: #ddd;
+        padding: 5px 10px;
+        border-radius: 10px;
+        color: #555;
+        margin-bottom: 5px;
+        max-width: 60%;
+        
+      }
+
+      body{
+        background-color: #333;
+      }
+
+      @media only screen and (max-width: 900px) {
+      .page_container{
+        flex-direction: column;
+      }
+    }
+    </style>
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+
+    <div class="text-center well"><b>Tic Tac Toe Online</b></div>
+    <div class='page_container' style="display: flex; justify-content: space-between; padding: 5px; border: rgb(255, 255, 0) 2px"> 
+      
+      
+      <div style="flex-grow: 4;" id='canvasHolder'>
+
+      </div>
+
+      
+      <div  style="padding-bottom: 10px;  display: flex;  flex-grow: 4; flex-direction: column;" >
+        <div>
+          <form class="restart" action="" method="POST">
+            <h1 style="color: #ccc;" id="status">Status : Ready</h1>
+            <div style="padding-top: 3px;"></div>
+            <button id="restart_btn" type="submit" style="visibility: hidden;  color:#ccc; background-color: rgb(12, 111, 240);" class="btn btn-block"><span class="glyphicon glyphicon-send"></span> Play Again</button>
+            <div style="padding-top: 10px;"></div>
+          </form>
+        </div>
+        
+        
+        <div >
+          <div class="no_message">
+            <h1 class="no_message" style='color: #ccc'>No message yet..</h1>
+            <div style="overflow-y: scroll; min-height:180px; max-height:180px; display:flex; flex-direction: column;  padding:5px; border-radius: 10px;" class="message_holder"  id="message_holder"></div>
+          </div>
+        </div>
+  
+        <div >
+          <form class="send_message" action="" method="POST">
+            <h1 style="margin: 2px;  color: #ccc;" >user : {{ content }} </h1>
+            <h1 style="margin: 2px; color: #ccc;" class="user_room">room : {{ room }}</h1>
+            
+            <b>Type your message below <span class="glyphicon glyphicon-arrow-down"></span></b>
+            <div class="clearfix" style="margin-top: 5px;"></div>
+            <div style="padding-top: 5px;"></div>
+            <input type="text" class="message form-control" placeholder="Messages">
+            <div style="padding-top: 5px;"></div>
+            <button type="submit" class="btn btn-success btn-block"><span class="glyphicon glyphicon-send"></span> Send</button>
+          </form>
+  
+          <form class="logout" action="" method="POST">
+            <div style="padding-top: 5px;"></div>
+            <button type="submit" style="color:#ccc; background-color: rgb(231, 64, 64);" class="btn btn-block"><span class="glyphicon glyphicon-send"></span> Logout</button>
+  
+          </form>
+
+          
+        </div>
+      </div>
+    </div>
+
+
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.7.3/socket.io.min.js"></script>
+    <script>
+
+
+      var message_holder = document.getElementById("message_holder");
+      
+      var socket = io.connect( 'http://' + document.domain + ':' + location.port )
+      
+      let myNumber 
+      
+      window.addEventListener("beforeunload", function (e) {
+        socket.emit( 'logout', {
+            userid : sessionStorage.getItem('clientId')
+          } )
+        sessionStorage.removeItem('clientId')
+      });
+
+
+      // broadcast a message
+      socket.on( 'connect', function() {
+        socket.emit( 'join', {
+            user_name : sessionStorage.getItem('user_name'),
+            room_name : sessionStorage.getItem('room_name'),
+            clientId : sessionStorage.getItem('clientId')
+          } )
+
+        document.getElementById('status').innerHTML = "Status: Waiting for other player"  
+        
+        //socket.emit("join",{room:"room1" , username : "new client"})
+        var form = $( 'form.send_message' ).on( 'submit', function( e ) {
+          e.preventDefault()
+          let user_input = $( 'input.message' ).val()
+          /*socket.emit( 'join', {
+            user_name : 'jack',
+            room_name : 'er',
+            clientId : sessionStorage.getItem('clientId')
+          } )*/
+          socket.emit( 'my event', {
+            message : user_input,
+            userid : sessionStorage.getItem('clientId')
+          } )
+          //console.log( {message : user_input})
+
+          // empty the input field
+          $( 'input.message' ).val( '' ).focus()
+        } )
+      } )
+
+      var form = $( 'form.logout' ).on( 'submit', function( e ) {
+          e.preventDefault()
+          //socket.emit("join",{user_input : user_input})
+          socket.emit( 'logout', {
+            userid : sessionStorage.getItem('clientId')
+          } )
+          sessionStorage.removeItem('clientId')
+          //console.log('logging out')
+          window.location = '/home'
+        } )
+
+      // capture message
+      socket.on( 'my response', function( msg ) {
+        //console.log( 'response : ' , msg )
+        //if( typeof msg.user_name !== 'undefined' ) {
+          $( 'h1.no_message' ).remove()
+          let color
+          if(msg.userid == sessionStorage.getItem('clientId')){
+            color = '#72d1fc'
+            flexAlign = 'align-self:flex-end;'
+          }
+          else{
+            flexAlign = 'align-self:flex-start;'
+            color = '#ddd'
+          }
+          $( 'div.message_holder' ).append( '<div style="'+ flexAlign + ' background-color : '+color+';" class="msg_bbl "><b style=" color: #000">'+msg.user_name+'</b> '+msg.message+'</div>' )
+          message_holder.scrollTop = message_holder.scrollHeight;
+        
+          //}
+      } )
+      socket.on('roomJoined' ,function(msg){
+        console.log('BJR')
+      })
+
+      socket.on('client_left_game',function(data){
+        myNumber = -1
+        currentPlayer = 1
+        end = true
+        for(let i=0;i<boxes.length;i++){
+          boxes[i].reset()
+        }
+        winnerName = data.winnerName
+        winner = 1
+        document.getElementById("status").innerHTML = "Status: Waiting for other player"
+      })
+
+      $('form.restart').on( 'submit', function( e ) {
+          e.preventDefault()
+          console.log('getting ready for next game')
+          
+          socket.emit( 'restart_ready', {
+            clientId : sessionStorage.getItem('clientId'),
+            playerNumber : myNumber
+          } )
+        
+          document.getElementById("status").innerHTML = "Status: Waiting for other player"
+        } )
+
+      
+      socket.on('start game',function(data){
+        if(data.n1 ){
+          if( data.n1 == sessionStorage.getItem('clientId') )
+            myNumber = 1
+          else
+            myNumber = 2
+        }
+        end = false
+        winner = -1
+        currentPlayer = 1
+
+        for(let i=0;i<boxes.length;i++){
+          boxes[i].reset()
+        }
+
+        console.log('game started ',data)
+
+        document.getElementById('status').innerHTML = "Status: Playing" 
+        document.getElementById("restart_btn").style.visibility = "hidden"
+      })
+
+      socket.on('position assigned response',function(data){
+        let pion = currentPlayer == 1 ? 'X' : 'O'
+        let index = positionToIndex(data.pos)
+        boxes[index].val = pion
+
+        if( data.etat == 'gagnant'){
+          end = true
+          winner = currentPlayer
+          winnerName = data.winnerName
+          document.getElementById("restart_btn").style.visibility = "visible"
+          document.getElementById('status').innerHTML = "Status: Game over" 
+        }else if(data.etat == 'nul'){
+          end = true
+          winner = 3
+          document.getElementById("restart_btn").style.visibility = "visible"
+          document.getElementById('status').innerHTML = "Status:  Game over" 
+        }
+
+        currentPlayer = data.currentPlayer
+
+      })
+
+      ///////////////////////////////////////////////////////////////////////////////////
+
+      var currentPlayer = 1;
+
+      var boxes = [];
+      var winner = -1;
+      let winnerName = ''
+      end = false;
+
+
+      var isMobile = {
+          Android: function() {
+              return navigator.userAgent.match(/Android/i);
+          },
+          BlackBerry: function() {
+              return navigator.userAgent.match(/BlackBerry/i);
+          },
+          iOS: function() {
+              return navigator.userAgent.match(/iPhone|iPad|iPod/i);
+          },
+          Opera: function() {
+              return navigator.userAgent.match(/Opera Mini/i);
+          },
+          Windows: function() {
+              return navigator.userAgent.match(/IEMobile/i);
+          },
+          any: function() {
+              return (isMobile.Android() || isMobile.BlackBerry() || isMobile.iOS() || isMobile.Opera() || isMobile.Windows());
+          }
+      };
+
+      function mouseClicked(){
+        sendPosition()
+      }
+
+      function getLineColumn(i){
+        let positions = [ [0,0] , [1,0] , [2,0]
+                        , [0,1] , [1,1] , [2,1] 
+                        , [0,2] , [1,2] , [2,2]]
+        return positions[i]
+      }
+
+      function positionToIndex(pos){
+        let positions = [ [0,0] , [1,0] , [2,0]
+                        , [0,1] , [1,1] , [2,1] 
+                        , [0,2] , [1,2] , [2,2]]
+        for(let i = 0 ; i < positions.length ;i++){
+          if(positions[i][0] == pos[0] && positions[i][1] == pos[1]){
+            return i
+          }
+        }
+        return -1
+      }
+
+      function sendPosition(){
+        if (myNumber == currentPlayer && !end ) {
+          for(let i=0;i<boxes.length;i++)
+          {
+            if(mouseX > boxes[i].x -width/8 && mouseX < boxes[i].x -width/8 + boxes[i].w && mouseY > boxes[i].y- height/5* 0.5 && mouseY <boxes[i].y - height/5* 0.5+ boxes[i].h){
+              if(boxes[i].val == ' '){
+                if(currentPlayer == 1){
+                  boxes[i].val = 'X';
+                  
+                }else{
+                  boxes[i].val = 'O';
+                  
+                }
+                socket.emit('client position assign', { pos :  getLineColumn(i) , userid: sessionStorage.getItem('clientId')})
+              }
+            }
+          }
+          
+        }
+      }
+
+      function setup() {
+
+          let canvas;
+          let canvasHolder = document.getElementById('canvasHolder')
+          //console.log('the vanvas holder '  ,canvasHolder)
+          //console.log('width and height :' ,canvasHolder.width,canvasHolder.height)
+          let minHeight = 400
+          if(isMobile.any())
+            canvas = createCanvas(window.innerWidth, window.innerHeight)
+          else{
+            let height = minHeight > canvasHolder.offsetHeight ? minHeight : canvasHolder.offsetHeight
+            //console.log(height)
+            canvas = createCanvas(canvasHolder.offsetWidth,height)
+          }
+
+          canvas.parent('canvasHolder')
+          //console.log('bjr' , canvas.parent())
+
+
+          // for(let i=0;i<5;i++){
+          //   boxes.push(new Box(width/8,width/5))
+          // }
+          boxes.push(new Box(width/8,height/5* 0.5 ))
+          boxes.push(new Box(width/8 , (height/5 * 0.5) +height/5))
+          boxes.push(new Box(width/8 , (height/5 * 0.5) +height/5 * 2))
+        
+          boxes.push(new Box(width/8 + width/6 *2,height/5* 0.5 ))
+          boxes.push(new Box(width/8 + width/6 *2 , (height/5 * 0.5) +height/5))
+          boxes.push(new Box(width/8 + width/6 *2, (height/5 * 0.5) +height/5 * 2))
+        
+          boxes.push(new Box(width/8 + width/6 *4,height/5* 0.5 ))
+          boxes.push(new Box(width/8 + width/6 *4 , (height/5 * 0.5) +height/5 ) )
+          boxes.push(new Box(width/8 + width/6 *4 , (height/5 * 0.5) +height/5 * 2) )
+          
+
+          textSize(40);
+      }
+
+      function draw() { 
+        background(51,51,51);
+        Plateau();
+        for(let i=0;i<boxes.length;i++){
+          boxes[i].show()
+        }
+        
+
+        if(winner == 1 ){
+          push()
+            fill(0,50,255)
+            textSize(width/10)
+            text(winnerName + ' wins!',width/2- width/2.5,height-40)
+            end = true;
+            pop()
+        }else if(winner == 2){
+          push()
+            fill(0,50,255)
+            textSize(width/10)
+            text(winnerName + ' wins!'      ,width/2- width/2.5,height-40)
+            end = true;
+          pop()
+        }else if(winner == 3){
+          push()
+            fill(0,50,255)
+            textSize(width/10)
+            console.log('Tie')
+            text('Nul Game',width/2- width/2.5,height-40)
+            end = true;
+          pop()
+        }
+      }
+
+
+      function Plateau(){
+        push()
+        stroke(227, 0, 64);
+        strokeWeight(5);
+        line(0,height/5,width,height/5);
+
+        line(0,height/5 * 2,width,height/5 * 2);
+
+        line(0,height/5 * 3,width,height/5 * 3);
+        ////////////////////////////////////////////
+        line(width/6 +width/6 ,0,width/6 +width/6,height/5 * 3);
+
+        line(width/6 + (width/6 *3),0,width/6 + (width/6 *3),height/5 * 3);
+
+        
+        noFill()
+        rect(0,0,width,height/5 * 3)
+        pop()
+      }
+
+
+
+      
+
+      function Box(x,y){
+        this.x= x;
+        this.y = y;
+        this.w = 2 * width/6;
+        this.h = height/5;
+        this.val = ' ';
+
+        this.show = function(){
+          push()
+
+            fill(0,150,255);
+            text(this.val,this.x,this.y);
+          pop()
+        }
+
+        this.reset = function(){
+          this.val = ' '
+        }
+
+      }
+
+     
+
+    </script>
+
+    <!--script src="{{ url_for('static', filename = 'sketch.js') }}" type="text/javascript"></!--script-->
+
+  </body>
+</html>
